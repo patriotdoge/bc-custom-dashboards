@@ -1,0 +1,26 @@
+# AL packages (auto-generated)
+.alpackages/
+
+# VS Code settings (local only)
+.vscode/
+
+# Compiled extensions
+*.app
+*.app.json
+
+# Test output
+TestResults/
+ALTestResults/
+
+# AL compiler artifacts / temp files
+*.bak
+*.tmp
+*.log
+
+# Sandbox / local artifacts (optional but common)
+artifacts/
+out/
+
+# OS junk
+.DS_Store
+Thumbs.db
