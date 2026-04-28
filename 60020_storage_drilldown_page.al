@@ -107,12 +107,20 @@ page 60020 "LOG Storage Drill-Down"
         TurnoverPct: Decimal;
         AvgDays: Decimal;
 
+    procedure SetDateFilter(NewStartDate: Date; NewEndDate: Date)
+    begin
+        StartDate := NewStartDate;
+        EndDate   := NewEndDate;
+    end;
+
     trigger OnOpenPage()
     var
         StorageCalc: Codeunit "LOG Avg Storage Time Calc";
     begin
-        StartDate  := CalcDate('<-CM>', Today());
-        EndDate    := Today();
+        if StartDate = 0D then
+            StartDate := CalcDate('<-CM>', Today());
+        if EndDate = 0D then
+            EndDate := Today();
         PeriodDays := EndDate - StartDate + 1;
 
         StorageCalc.GetStorageBreakdown(StartDate, EndDate,

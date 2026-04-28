@@ -67,12 +67,15 @@ page 60001 "LOG Logistics KPI Part"
                 {
                     ApplicationArea = All;
                     Caption         = 'On-Time Delivery (%)';
-                    ToolTip         = 'Ratio of shipment lines delivered on or before the requested delivery date over total expected lines (shipped + open) in the selected period. Items: AE* and AA*.';
+                    ToolTip         = 'Ratio of shipment lines delivered on or before the requested delivery date over total posted shipment lines (on-time + late) in the selected period. Items: AE* and AA*.';
                     DrillDown       = true;
 
                     trigger OnDrillDown()
+                    var
+                        OTDDrillDown: Page "LOG OTD Drill-Down";
                     begin
-                        Page.Run(Page::"LOG OTD Drill-Down");
+                        OTDDrillDown.LoadAllLines(StartDate, EndDate);
+                        OTDDrillDown.Run();
                     end;
                 }
 
@@ -85,37 +88,64 @@ page 60001 "LOG Logistics KPI Part"
                     DrillDown       = true;
 
                     trigger OnDrillDown()
+                    var
+                        StorageDrillDown: Page "LOG Storage Drill-Down";
                     begin
-                        Page.Run(Page::"LOG Storage Drill-Down");
+                        StorageDrillDown.SetDateFilter(StartDate, EndDate);
+                        StorageDrillDown.Run();
                     end;
                 }
 
-                // Supporting — on-time line count
+                // Supporting — on-time shipment line count
                 field(OnTimeLinesField; KPIBuffer."OTD On-Time Lines")
                 {
                     ApplicationArea = All;
                     Caption         = 'On-Time Lines';
-                    ToolTip         = 'Shipment lines delivered on or before the requested date.';
+                    ToolTip         = 'Shipment lines delivered on or before the requested delivery date.';
                     DrillDown       = true;
 
                     trigger OnDrillDown()
+                    var
+                        OTDDrillDown: Page "LOG OTD Drill-Down";
                     begin
-                        Page.Run(Page::"LOG OTD Drill-Down");
+                        OTDDrillDown.LoadOnTimeLines(StartDate, EndDate);
+                        OTDDrillDown.Run();
                     end;
                 }
 
-                // Supporting — open/late line count
+                // Supporting — late shipment line count (NOTD)
+                field(LateShipLinesField; KPIBuffer."OTD Late Shipment Lines")
+                {
+                    ApplicationArea = All;
+                    Caption         = 'Not On-Time Lines';
+                    ToolTip         = 'Shipment lines where the shipment date was after the requested delivery date.';
+                    StyleExpr       = LateShipStyle;
+                    DrillDown       = true;
+
+                    trigger OnDrillDown()
+                    var
+                        OTDDrillDown: Page "LOG OTD Drill-Down";
+                    begin
+                        OTDDrillDown.LoadLateLines(StartDate, EndDate);
+                        OTDDrillDown.Run();
+                    end;
+                }
+
+                // Supporting — open/late sales order lines
                 field(OpenLateLinesField; KPIBuffer."OTD Open Late Lines")
                 {
                     ApplicationArea = All;
-                    Caption         = 'Open / Late Lines';
-                    ToolTip         = 'Open order lines with outstanding quantity and requested delivery date within the selected period.';
+                    Caption         = 'Open / Late Sales Order Lines';
+                    ToolTip         = 'Open sales order lines (AE*/AA*) with outstanding quantity and requested delivery date within the selected period.';
                     StyleExpr       = OpenLateStyle;
                     DrillDown       = true;
 
                     trigger OnDrillDown()
+                    var
+                        OpenLateDrillDown: Page "LOG Open Late Order Lines";
                     begin
-                        Page.Run(Page::"LOG OTD Drill-Down");
+                        OpenLateDrillDown.SetDateFilter(StartDate, EndDate);
+                        OpenLateDrillDown.Run();
                     end;
                 }
 
@@ -183,6 +213,7 @@ page 60001 "LOG Logistics KPI Part"
         StartDate: Date;
         EndDate: Date;
         OpenLateStyle: Text;
+        LateShipStyle: Text;
         KPIsRefreshedMsg: Label 'KPIs recalculated for %1 to %2.', Comment = '%1=Start Date,%2=End Date';
 
     trigger OnOpenPage()
@@ -204,6 +235,11 @@ page 60001 "LOG Logistics KPI Part"
             OpenLateStyle := 'Unfavorable'
         else
             OpenLateStyle := 'Favorable';
+
+        if KPIBuffer."OTD Late Shipment Lines" > 0 then
+            LateShipStyle := 'Unfavorable'
+        else
+            LateShipStyle := 'Favorable';
 
         CurrPage.Update(false);
     end;

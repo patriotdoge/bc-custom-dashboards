@@ -37,7 +37,7 @@ codeunit 60010 "LOG Avg Storage Time Calc"
         LocationFilter := 'STOCK|QR|NC|FR*';
 
         PeriodDays   := EndDate - StartDate + 1;
-        OpeningStock := CalcStockValue(StartDate - 1);
+        OpeningStock := CalcStockValue(StartDate);
         ClosingStock := CalcStockValue(EndDate);
         AvgStock     := (OpeningStock + ClosingStock) / 2;
         COGS         := CalcCOGS(StartDate, EndDate);
@@ -86,7 +86,9 @@ codeunit 60010 "LOG Avg Storage Time Calc"
     //   Exclusion 1: Item No. starts with 'SA'          (step 9)
     //   Exclusion 2: Item Description contains
     //                'Refurbished' (case-insensitive)   (step 10)
-    //   Calculation: SUM(Sales Amount Actual) - SUM(Discount Amount)
+    //   Calculation: SUM(Control44) - SUM(Control46)
+    //                = Sales Amount Actual - Profit
+    //                = Abs(Cost Amount (Actual))
     // ----------------------------------------------------------
     local procedure CalcCOGS(StartDate: Date; EndDate: Date): Decimal
     var
@@ -103,11 +105,12 @@ codeunit 60010 "LOG Avg Storage Time Calc"
             repeat
                 // Exclusion 1 — SA* items
                 if StrPos(ValueEntry."Item No.", 'SA') <> 1 then begin
-                    // Exclusion 2 — Refurbished items
-                    if Item.Get(ValueEntry."Item No.") then
-                        if StrPos(UpperCase(Item.Description), 'REFURBISHED') = 0 then
-                            COGS += Abs(ValueEntry."Sales Amount (Actual)") -
-                                    Abs(ValueEntry."Discount Amount");
+                    // Exclusion 2 — Refurbished items; include if description can't be found
+                    Item.Init();
+                    if not Item.Get(ValueEntry."Item No.") or
+                       (StrPos(UpperCase(Item.Description), 'REFURBISHED') = 0)
+                    then
+                        COGS += Abs(ValueEntry."Cost Amount (Actual)");
                 end;
             until ValueEntry.Next() = 0;
 
@@ -122,7 +125,7 @@ codeunit 60010 "LOG Avg Storage Time Calc"
                                    var COGS: Decimal; var TurnoverPct: Decimal)
     begin
         LocationFilter := 'STOCK|QR|NC|FR*';
-        OpenStock      := CalcStockValue(StartDate - 1);
+        OpenStock      := CalcStockValue(StartDate);
         CloseStock     := CalcStockValue(EndDate);
         COGS           := CalcCOGS(StartDate, EndDate);
 

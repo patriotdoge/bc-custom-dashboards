@@ -47,6 +47,10 @@ table 60000 "LOG Logistics KPI Buffer"
         {
             Caption = 'Open / Late Order Lines';
         }
+        field(23; "OTD Late Shipment Lines"; Integer)
+        {
+            Caption = 'Shipments Delivered Late';
+        }
 
         // ── R002: Average Storage Time ───────────────────────
         field(30; "Avg Storage Days"; Decimal)
@@ -110,6 +114,7 @@ table 60000 "LOG Logistics KPI Buffer"
         StorageCalc: Codeunit "LOG Avg Storage Time Calc";
         OnTime: Integer;
         OpenLate: Integer;
+        LateOpenForOTD: Integer;
         OpenStock: Decimal;
         CloseStock: Decimal;
         COGS: Decimal;
@@ -126,11 +131,11 @@ table 60000 "LOG Logistics KPI Buffer"
         "Period Days" := EndDate - StartDate + 1;
 
         // R001
-        OTDCalc.GetOTDBreakdown(StartDate, EndDate, OnTime, OpenLate);
+        OTDCalc.GetOTDBreakdown(StartDate, EndDate, OnTime, OpenLate, "OTD Late Shipment Lines", LateOpenForOTD);
         "OTD On-Time Lines"   := OnTime;
         "OTD Open Late Lines" := OpenLate;
-        if (OnTime + OpenLate) > 0 then
-            "OTD Pct" := Round((OnTime / (OnTime + OpenLate)) * 100, 0.01)
+        if (OnTime + "OTD Late Shipment Lines" + LateOpenForOTD) > 0 then
+            "OTD Pct" := Round((OnTime / (OnTime + "OTD Late Shipment Lines" + LateOpenForOTD)) * 100, 0.01)
         else
             "OTD Pct" := 0;
 
